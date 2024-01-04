@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <name>Character Shenanigans</name>
+    <directory>character shenanigans</directory>
+    <id>3130836503</id>
+    <description>This mod requires REPENTOGON. Press the tilde key to open the new debug console and menu. There's a new Shenanigans option that will let you lock/unlock characters and their completion marks.
+
+This is a companion mod to [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2932859748]Win Streak Shenanigans[/url].
+
+Note: I haven't looked into modded characters yet.</description>
+    <version>1.1</version>
+    <visibility>Public</visibility>
+    <tag id="Lua"/>
+    <tag id="Player Characters"/>
+    <tag id="Tweaks"/>
+</metadata>
