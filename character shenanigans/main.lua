@@ -38,7 +38,8 @@ if REPENTOGON then
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersTaintedModded', 'Tainted (Modded)')
     
     for _, character in ipairs({
-                                -- EntityConfigPlayer:GetName() will return a label rather than the actual name
+                                -- this mostly works, but doesn't include things like "Tainted" or "and Esau"
+                                -- Isaac.GetString('Players', EntityConfig.GetPlayer(character.id):GetName())
                                 { name = 'Isaac'         , id = PlayerType.PLAYER_ISAAC       , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.ISAAC_HOLDS_THE_D6 }, achievementsText = { 'Start with The D6?' } },
                                 { name = 'Magdalene'     , id = PlayerType.PLAYER_MAGDALENE   , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.MAGDALENE_HOLDS_A_PILL }, achievementsText = { 'Start with a pill?' } },
                                 { name = 'Cain'          , id = PlayerType.PLAYER_CAIN        , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.CAIN_HOLDS_PAPERCLIP }, achievementsText = { 'Start with Paper Clip?' } },
