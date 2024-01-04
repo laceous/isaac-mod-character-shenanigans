@@ -6,6 +6,11 @@ if REPENTOGON then
     mod:setupImGui()
   end
   
+  function mod:localize(category, key)
+    local s = Isaac.GetString(category, key)
+    return (s == 'StringTable::InvalidCategory' or s == 'StringTable::InvalidKey') and key or s
+  end
+  
   function mod:getModdedCharacters()
     local i = PlayerType.NUM_PLAYER_TYPES -- 41, EntityConfig.GetMaxPlayerType()
     local playerConfig = EntityConfig.GetPlayer(i)
@@ -38,49 +43,53 @@ if REPENTOGON then
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersTaintedModded', 'Tainted (Modded)')
     
     for _, character in ipairs({
-                                -- this mostly works, but doesn't include things like "Tainted" or "and Esau"
-                                -- Isaac.GetString('Players', EntityConfig.GetPlayer(character.id):GetName())
-                                { name = 'Isaac'         , id = PlayerType.PLAYER_ISAAC       , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.ISAAC_HOLDS_THE_D6 }, achievementsText = { 'Start with The D6?' } },
-                                { name = 'Magdalene'     , id = PlayerType.PLAYER_MAGDALENE   , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.MAGDALENE_HOLDS_A_PILL }, achievementsText = { 'Start with a pill?' } },
-                                { name = 'Cain'          , id = PlayerType.PLAYER_CAIN        , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.CAIN_HOLDS_PAPERCLIP }, achievementsText = { 'Start with Paper Clip?' } },
-                                { name = 'Judas'         , id = PlayerType.PLAYER_JUDAS       , tab = 'shenanigansTabCharactersRegular' },
-                                { name = '???'           , id = PlayerType.PLAYER_BLUEBABY    , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'Eve'           , id = PlayerType.PLAYER_EVE         , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.EVE_HOLDS_RAZOR_BLADE }, achievementsText = { 'Start with Razor Blade?' } },
-                                { name = 'Samson'        , id = PlayerType.PLAYER_SAMSON      , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.SAMSON_HOLDS_CHILDS_HEART }, achievementsText = { 'Start with Child\'s Heart?' } },
-                                { name = 'Azazel'        , id = PlayerType.PLAYER_AZAZEL      , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'Lazarus'       , id = PlayerType.PLAYER_LAZARUS     , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.LAZARUS_HOLDS_ANEMIA }, achievementsText = { 'Start with Anemic?' } },
-                                { name = 'Eden'          , id = PlayerType.PLAYER_EDEN        , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'The Lost'      , id = PlayerType.PLAYER_THELOST     , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.THE_LOST_HOLDS_HOLY_MANTLE }, achievementsText = { 'Start with Holy Mantle?' } },
-                                { name = 'Lilith'        , id = PlayerType.PLAYER_LILITH      , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'Keeper'        , id = PlayerType.PLAYER_KEEPER      , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.KEEPER_HOLDS_WOODEN_NICKEL, Achievement.KEEPER_HOLDS_STORE_KEY, Achievement.KEEPER_HOLDS_A_PENNY }, achievementsText = { 'Start with Wooden Nickel?', 'Start with Store Key?', 'Start with a penny?' } },
-                                { name = 'Apollyon'      , id = PlayerType.PLAYER_APOLLYON    , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'The Forgotten' , id = PlayerType.PLAYER_THEFORGOTTEN, tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'Bethany'       , id = PlayerType.PLAYER_BETHANY     , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'Jacob and Esau', id = PlayerType.PLAYER_JACOB       , tab = 'shenanigansTabCharactersRegular' },
-                                { name = 'Tainted Isaac'    , id = PlayerType.PLAYER_ISAAC_B       , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Magdalene', id = PlayerType.PLAYER_MAGDALENE_B   , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Cain'     , id = PlayerType.PLAYER_CAIN_B        , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Judas'    , id = PlayerType.PLAYER_JUDAS_B       , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted ???'      , id = PlayerType.PLAYER_BLUEBABY_B    , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Eve'      , id = PlayerType.PLAYER_EVE_B         , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Samson'   , id = PlayerType.PLAYER_SAMSON_B      , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Azazel'   , id = PlayerType.PLAYER_AZAZEL_B      , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Lazarus'  , id = PlayerType.PLAYER_LAZARUS_B     , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Eden'     , id = PlayerType.PLAYER_EDEN_B        , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Lost'     , id = PlayerType.PLAYER_THELOST_B     , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Lilith'   , id = PlayerType.PLAYER_LILITH_B      , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Keeper'   , id = PlayerType.PLAYER_KEEPER_B      , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Apollyon' , id = PlayerType.PLAYER_APOLLYON_B    , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Forgotten', id = PlayerType.PLAYER_THEFORGOTTEN_B, tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Bethany'  , id = PlayerType.PLAYER_BETHANY_B     , tab = 'shenanigansTabCharactersTainted' },
-                                { name = 'Tainted Jacob'    , id = PlayerType.PLAYER_JACOB_B       , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_ISAAC       , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.ISAAC_HOLDS_THE_D6 }, achievementsText = { 'Start with #THE_D6_NAME?' } },
+                                { id = PlayerType.PLAYER_MAGDALENE   , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.MAGDALENE_HOLDS_A_PILL }, achievementsText = { 'Start with a pill?' } },
+                                { id = PlayerType.PLAYER_CAIN        , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.CAIN_HOLDS_PAPERCLIP }, achievementsText = { 'Start with #PAPER_CLIP_NAME?' } },
+                                { id = PlayerType.PLAYER_JUDAS       , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_BLUEBABY    , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_EVE         , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.EVE_HOLDS_RAZOR_BLADE }, achievementsText = { 'Start with #RAZOR_BLADE_NAME?' } },
+                                { id = PlayerType.PLAYER_SAMSON      , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.SAMSON_HOLDS_CHILDS_HEART }, achievementsText = { 'Start with #CHILDS_HEART_NAME?' } },
+                                { id = PlayerType.PLAYER_AZAZEL      , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_LAZARUS     , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.LAZARUS_HOLDS_ANEMIA }, achievementsText = { 'Start with #ANEMIC_NAME?' } },
+                                { id = PlayerType.PLAYER_EDEN        , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_THELOST     , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.THE_LOST_HOLDS_HOLY_MANTLE }, achievementsText = { 'Start with #HOLY_MANTLE_NAME?' } },
+                                { id = PlayerType.PLAYER_LILITH      , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_KEEPER      , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.KEEPER_HOLDS_WOODEN_NICKEL, Achievement.KEEPER_HOLDS_STORE_KEY, Achievement.KEEPER_HOLDS_A_PENNY }, achievementsText = { 'Start with #WOODEN_NICKEL_NAME?', 'Start with #STORE_KEY_NAME?', 'Start with a penny?' } },
+                                { id = PlayerType.PLAYER_APOLLYON    , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_THEFORGOTTEN, tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_BETHANY     , tab = 'shenanigansTabCharactersRegular' },
+                                { id = PlayerType.PLAYER_JACOB       , tab = 'shenanigansTabCharactersRegular', id2 = PlayerType.PLAYER_ESAU },
+                                { id = PlayerType.PLAYER_ISAAC_B       , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_MAGDALENE_B   , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_CAIN_B        , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_JUDAS_B       , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_BLUEBABY_B    , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_EVE_B         , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_SAMSON_B      , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_AZAZEL_B      , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_LAZARUS_B     , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_EDEN_B        , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_THELOST_B     , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_LILITH_B      , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_KEEPER_B      , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_APOLLYON_B    , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_THEFORGOTTEN_B, tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_BETHANY_B     , tab = 'shenanigansTabCharactersTainted' },
+                                { id = PlayerType.PLAYER_JACOB_B       , tab = 'shenanigansTabCharactersTainted' },
                               })
     do
+      local playerConfig = EntityConfig.GetPlayer(character.id)
+      character.name = mod:localize('Players', playerConfig:GetName())
+      if character.id2 then
+        local playerConfig2 = EntityConfig.GetPlayer(character.id2)
+        character.name = character.name .. '+' .. mod:localize('Players', playerConfig2:GetName())
+      end
       mod:processCharacter(character)
     end
     
     for _, character in ipairs(mod:getModdedCharacters()) do
-      mod:processCharacter({ name = character.config:GetName(), id = character.id, tab = character.config:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded' })
+      mod:processCharacter({ id = character.id, name = character.config:GetName(), tab = character.config:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded' })
     end
   end
   
@@ -110,7 +119,10 @@ if REPENTOGON then
     if character.achievements then
       for i, achievement in ipairs(character.achievements) do
         local chkAchievementId = 'shenanigansChkCharacterAchievement' .. character.id .. '_' .. achievement
-        ImGui.AddCheckbox(character.tab, chkAchievementId, character.achievementsText[i], nil, false)
+        local chkAchievementText = string.gsub(character.achievementsText[i], '(#[%w_]+)', function(s)
+          return mod:localize('Items', s)
+        end)
+        ImGui.AddCheckbox(character.tab, chkAchievementId, chkAchievementText, nil, false)
         ImGui.AddCallback(chkAchievementId, ImGuiCallback.Render, function()
           local gameData = Isaac.GetPersistentGameData()
           ImGui.UpdateData(chkAchievementId, ImGuiData.Value, gameData:Unlocked(achievement))
@@ -138,20 +150,24 @@ if REPENTOGON then
       end)
     end
     for _, boss in ipairs({
-                           { name = 'Mom\'s Heart'  , id = CompletionType.MOMS_HEART },
-                           { name = 'Isaac'         , id = CompletionType.ISAAC },
-                           { name = 'Satan'         , id = CompletionType.SATAN },
-                           { name = 'Boss Rush'     , id = CompletionType.BOSS_RUSH },
-                           { name = '???'           , id = CompletionType.BLUE_BABY },
-                           { name = 'The Lamb'      , id = CompletionType.LAMB },
-                           { name = 'Mega Satan'    , id = CompletionType.MEGA_SATAN },
-                           { name = 'Ultra Greed'   , id = CompletionType.ULTRA_GREED }, -- ULTRA_GREEDIER
-                           { name = 'Hush'          , id = CompletionType.HUSH },
-                           { name = 'Delirium'      , id = CompletionType.DELIRIUM },
-                           { name = 'Mother'        , id = CompletionType.MOTHER },
-                           { name = 'The Beast'     , id = CompletionType.BEAST },
+                           { id = CompletionType.MOMS_HEART , entity = EntityType.ENTITY_MOMS_HEART },
+                           { id = CompletionType.ISAAC      , entity = EntityType.ENTITY_ISAAC },
+                           { id = CompletionType.SATAN      , entity = EntityType.ENTITY_SATAN },
+                           { id = CompletionType.BOSS_RUSH  , name = 'Boss Rush' },
+                           { id = CompletionType.BLUE_BABY  , entity = EntityType.ENTITY_ISAAC, variant = 1 },
+                           { id = CompletionType.LAMB       , entity = EntityType.ENTITY_THE_LAMB },
+                           { id = CompletionType.MEGA_SATAN , entity = EntityType.ENTITY_MEGA_SATAN },
+                           { id = CompletionType.ULTRA_GREED, entity = EntityType.ENTITY_ULTRA_GREED }, -- ULTRA_GREEDIER
+                           { id = CompletionType.HUSH       , entity = EntityType.ENTITY_HUSH },
+                           { id = CompletionType.DELIRIUM   , entity = EntityType.ENTITY_DELIRIUM },
+                           { id = CompletionType.MOTHER     , entity = EntityType.ENTITY_MOTHER },
+                           { id = CompletionType.BEAST      , entity = EntityType.ENTITY_BEAST },
                          })
     do
+      if boss.entity then
+        local entityConfig = EntityConfig.GetEntity(boss.entity, boss.variant)
+        boss.name = mod:localize('Entities', entityConfig:GetName())
+      end
       local cmbCompletionMarkId = 'shenanigansCmbCharacterCompletionMark' .. character.id .. '_' .. boss.id
       ImGui.AddCombobox(character.tab, cmbCompletionMarkId, boss.name, nil, { 'Off', 'Normal', 'Hard' }, 0, true)
       ImGui.AddCallback(cmbCompletionMarkId, ImGuiCallback.Render, function()
