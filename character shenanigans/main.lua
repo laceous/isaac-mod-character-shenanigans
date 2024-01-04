@@ -72,18 +72,6 @@ if REPENTOGON then
           end
         end
       end)
-      if player.type == PlayerType.PLAYER_EDEN or player.type == PlayerType.PLAYER_EDEN_B then
-        local intEdenTokensId = 'shenanigansIntCharacterEdenTokens' .. player.type
-        ImGui.AddInputInteger(player.tab, intEdenTokensId, 'Tokens', nil, 0, 1, 100)
-        ImGui.AddCallback(intEdenTokensId, ImGuiCallback.Render, function()
-          local gameData = Isaac.GetPersistentGameData()
-          ImGui.UpdateData(intEdenTokensId, ImGuiData.Value, gameData:GetEventCounter(EventCounter.EDEN_TOKENS))
-        end)
-        ImGui.AddCallback(intEdenTokensId, ImGuiCallback.Edited, function(num)
-          local gameData = Isaac.GetPersistentGameData()
-          gameData:IncreaseEventCounter(EventCounter.EDEN_TOKENS, num - gameData:GetEventCounter(EventCounter.EDEN_TOKENS))
-        end)
-      end
       if player.achievements then
         for i, achievement in ipairs(player.achievements) do
           local chkAchievementId = 'shenanigansChkCharacterAchievement' .. player.type .. '_' .. achievement
@@ -101,6 +89,18 @@ if REPENTOGON then
             end
           end)
         end
+      end
+      if player.type == PlayerType.PLAYER_EDEN or player.type == PlayerType.PLAYER_EDEN_B then
+        local intEdenTokensId = 'shenanigansIntCharacterEdenTokens' .. player.type
+        ImGui.AddInputInteger(player.tab, intEdenTokensId, 'Tokens', nil, 0, 1, 100)
+        ImGui.AddCallback(intEdenTokensId, ImGuiCallback.Render, function()
+          local gameData = Isaac.GetPersistentGameData()
+          ImGui.UpdateData(intEdenTokensId, ImGuiData.Value, gameData:GetEventCounter(EventCounter.EDEN_TOKENS))
+        end)
+        ImGui.AddCallback(intEdenTokensId, ImGuiCallback.Edited, function(num)
+          local gameData = Isaac.GetPersistentGameData()
+          gameData:IncreaseEventCounter(EventCounter.EDEN_TOKENS, num - gameData:GetEventCounter(EventCounter.EDEN_TOKENS))
+        end)
       end
       for _, boss in ipairs({
                              { name = 'Mom\'s Heart'  , type = CompletionType.MOMS_HEART },
