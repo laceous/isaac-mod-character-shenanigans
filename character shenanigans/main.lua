@@ -17,7 +17,7 @@ if REPENTOGON then
     local characters = {}
     
     while playerConfig do
-      if not playerConfig:IsHidden() and not playerConfig:IsTainted() then
+      if not playerConfig:IsHidden() and not playerConfig:IsTainted() and not mod:hasPlayerType(characters, playerConfig:GetPlayerType()) then
         table.insert(characters, playerConfig)
         
         local taintedConfig = playerConfig:GetTaintedCounterpart()
