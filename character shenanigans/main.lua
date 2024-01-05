@@ -8,7 +8,7 @@ if REPENTOGON then
   
   function mod:localize(category, key)
     local s = Isaac.GetString(category, key)
-    return (s == 'StringTable::InvalidCategory' or s == 'StringTable::InvalidKey') and key or s
+    return (s == nil or s == 'StringTable::InvalidCategory' or s == 'StringTable::InvalidKey') and key or s
   end
   
   function mod:getModdedCharacters()
@@ -17,8 +17,13 @@ if REPENTOGON then
     local characters = {}
     
     while playerConfig do
-      if not playerConfig:IsHidden() then
-        table.insert(characters, { id = i, config = playerConfig })
+      if not playerConfig:IsHidden() and not playerConfig:IsTainted() then
+        table.insert(characters, playerConfig)
+        
+        local taintedConfig = playerConfig:GetTaintedCounterpart()
+        if taintedConfig and not taintedConfig:IsHidden() and not mod:hasPlayerType(characters, taintedConfig:GetPlayerType()) then
+          table.insert(characters, taintedConfig)
+        end
       end
       
       i = i + 1
@@ -26,6 +31,16 @@ if REPENTOGON then
     end
     
     return characters
+  end
+  
+  function mod:hasPlayerType(characters, playerType)
+    for _, character in ipairs(characters) do
+      if character:GetPlayerType() == playerType then
+        return true
+      end
+    end
+    
+    return false
   end
   
   function mod:setupImGui()
@@ -89,7 +104,7 @@ if REPENTOGON then
     end
     
     for _, character in ipairs(mod:getModdedCharacters()) do
-      mod:processCharacter({ id = character.id, name = character.config:GetName(), tab = character.config:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded' })
+      mod:processCharacter({ id = character:GetPlayerType(), name = character:GetName(), tab = character:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded' })
     end
   end
   
