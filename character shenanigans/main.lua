@@ -143,8 +143,8 @@ if REPENTOGON then
           ImGui.UpdateData(chkAchievementId, ImGuiData.Value, gameData:Unlocked(achievement))
         end)
         ImGui.AddCallback(chkAchievementId, ImGuiCallback.Edited, function(b)
-          local gameData = Isaac.GetPersistentGameData()
           if b then
+            local gameData = Isaac.GetPersistentGameData()
             gameData:TryUnlock(achievement)
           else
             Isaac.ExecuteCommand('lockachievement ' .. achievement)
