@@ -51,6 +51,48 @@ if REPENTOGON then
     return nil
   end
   
+  function mod:getXmlPlayerAchievement(id)
+    id = tonumber(id)
+    
+    if math.type(id) == 'integer' then
+      local entry = XMLData.GetEntryById(XMLNode.PLAYER, id)
+      if entry and type(entry) == 'table' then
+        if entry.achievement and entry.achievement ~= '' then
+          return entry.achievement
+        end
+      end
+    end
+    
+    return nil
+  end
+  
+  function mod:getXmlAchievementId(name)
+    local entry = XMLData.GetEntryByName(XMLNode.ACHIEVEMENT, name)
+    if entry and type(entry) == 'table' then
+      if entry.id and entry.id ~= '' then
+        return entry.id
+      end
+    end
+    
+    return nil
+  end
+  
+  function mod:getAchievementID(playerConfig)
+    local achievementId = playerConfig:GetAchievementID() -- broken for modded characters right now
+    
+    if achievementId == 0 then
+      local achievement = mod:getXmlPlayerAchievement(playerConfig:GetPlayerType())
+      if achievement then
+        local tempAchievementId = tonumber(mod:getXmlAchievementId(achievement))
+        if math.type(tempAchievementId) == 'integer' then
+          achievementId = tempAchievementId
+        end
+      end
+    end
+    
+    return achievementId
+  end
+  
   function mod:localize(category, key)
     local s = Isaac.GetString(category, key)
     return (s == nil or s == 'StringTable::InvalidCategory' or s == 'StringTable::InvalidKey') and key or s
@@ -414,13 +456,13 @@ if REPENTOGON then
     ImGui.AddCallback(chkUnlockedId, ImGuiCallback.Render, function()
       local gameData = Isaac.GetPersistentGameData()
       local playerConfig = EntityConfig.GetPlayer(character.id)
-      local achievement = playerConfig:GetAchievementID()
+      local achievement = mod:getAchievementID(playerConfig)
       local unlocked = achievement <= 0 or gameData:Unlocked(achievement)
       ImGui.UpdateData(chkUnlockedId, ImGuiData.Value, unlocked)
     end)
     ImGui.AddCallback(chkUnlockedId, ImGuiCallback.Edited, function(b)
       local playerConfig = EntityConfig.GetPlayer(character.id)
-      local achievement = playerConfig:GetAchievementID()
+      local achievement = mod:getAchievementID(playerConfig)
       if achievement > 0 then
         mod:unlockLock(achievement, b)
       end
