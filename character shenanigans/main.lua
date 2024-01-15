@@ -1,9 +1,54 @@
 local mod = RegisterMod('Character Shenanigans', 1)
+local json = require('json')
 
 if REPENTOGON then
-  function mod:onSaveSlotLoad()
-    mod:RemoveCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, mod.onSaveSlotLoad)
+  function mod:onRender()
+    mod:RemoveCallback(ModCallbacks.MC_MAIN_MENU_RENDER, mod.onRender)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, mod.onRender)
     mod:setupImGui()
+  end
+  
+  function mod:getKeys(tbl, val)
+    local keys = {}
+    
+    for k, v in pairs(tbl) do
+      if v == val and
+         k ~= 'PLAYER_MAGDALENA' and -- exclude deprecated properties
+         k ~= 'PLAYER_XXX' and
+         k ~= 'PLAYER_MAGDALENA_B' and
+         k ~= 'PLAYER_XXX_B'
+      then
+        table.insert(keys, k)
+      end
+    end
+    
+    table.sort(keys)
+    return keys
+  end
+  
+  function mod:hasKey(tbl, key)
+    for _, v in ipairs(tbl) do
+      if v.key == key then
+        return true
+      end
+    end
+    
+    return false
+  end
+  
+  function mod:getXmlPlayerSourceId(id)
+    id = tonumber(id)
+    
+    if math.type(id) == 'integer' then
+      local entry = XMLData.GetEntryById(XMLNode.PLAYER, id)
+      if entry and type(entry) == 'table' then
+        if entry.sourceid and entry.sourceid ~= '' then
+          return entry.sourceid
+        end
+      end
+    end
+    
+    return nil
   end
   
   function mod:localize(category, key)
@@ -12,10 +57,10 @@ if REPENTOGON then
   end
   
   function mod:getModdedCharacters()
-    local i = PlayerType.NUM_PLAYER_TYPES -- 41, EntityConfig.GetMaxPlayerType()
-    local playerConfig = EntityConfig.GetPlayer(i)
     local characters = {}
     
+    local i = PlayerType.NUM_PLAYER_TYPES -- 41, EntityConfig.GetMaxPlayerType()
+    local playerConfig = EntityConfig.GetPlayer(i)
     while playerConfig do
       if not playerConfig:IsHidden() and not playerConfig:IsTainted() and not mod:hasPlayerType(characters, playerConfig:GetPlayerType()) then
         table.insert(characters, playerConfig)
@@ -33,6 +78,23 @@ if REPENTOGON then
     return characters
   end
   
+  function mod:getModdedCharacterId(sourceIdAndName)
+    for _, character in ipairs(mod:getModdedCharacters()) do
+      local sourceId = mod:getXmlPlayerSourceId(character:GetPlayerType())
+      if sourceId then
+        local generatedSourceIdAndName = sourceId .. '-' .. character:GetName()
+        if character:IsTainted() then
+          generatedSourceIdAndName = generatedSourceIdAndName .. '-Tainted-'
+        end
+        if generatedSourceIdAndName == sourceIdAndName then
+          return character:GetPlayerType()
+        end
+      end
+    end
+    
+    return nil
+  end
+  
   function mod:hasPlayerType(characters, playerType)
     for _, character in ipairs(characters) do
       if character:GetPlayerType() == playerType then
@@ -41,6 +103,184 @@ if REPENTOGON then
     end
     
     return false
+  end
+  
+  function mod:isPlayerType(playerType)
+    return EntityConfig.GetPlayer(playerType) ~= nil
+  end
+  
+  function mod:isBossType(boss)
+    for _, v in pairs(CompletionType) do
+      if v == boss then
+        return true
+      end
+    end
+    
+    return false
+  end
+  
+  function mod:unlockLock(achievement, unlock)
+    if unlock then
+      local gameData = Isaac.GetPersistentGameData()
+      gameData:TryUnlock(achievement) -- Isaac.ExecuteCommand('achievement ' .. achievement)
+    else
+      Isaac.ExecuteCommand('lockachievement ' .. achievement)
+    end
+  end
+  
+  function mod:processImportedJson(s)
+    local jsonDecoded, data = pcall(json.decode, s)
+    local completionMarks = {}
+    
+    if jsonDecoded and type(data) == 'table' then
+      if type(data.completionMarks) == 'table' then
+        for k, v in pairs(data.completionMarks) do
+          local character = nil
+          if type(k) == 'string' then
+            if string.sub(k, 1, 2) == 'M-' then
+              character = tonumber(mod:getModdedCharacterId(string.sub(k, 3)))
+            else
+              character = tonumber(string.match(k, '^(%d+)'))
+            end
+          end
+          if math.type(character) == 'integer' and type(v) == 'table' and mod:isPlayerType(character) then
+            for l, w in pairs(v) do
+              local boss = nil
+              if type(l) == 'string' then
+                boss = tonumber(string.match(l, '^(%d+)'))
+              end
+              if math.type(boss) == 'integer' and math.type(w) == 'integer' and mod:isBossType(boss) and w >= 0 then -- 0=off,1=normal,>=2=hard
+                local key = character .. '-' .. boss
+                if not mod:hasKey(completionMarks, key) then
+                  table.insert(completionMarks, { key = key, character = character, boss = boss, value = w })
+                end
+              end
+            end
+          end
+        end
+      end
+      
+      table.sort(completionMarks, function(a, b)
+        if a.character == b.character then
+          return a.boss < b.boss
+        end
+        
+        return a.character < b.character
+      end)
+      
+      for _, v in ipairs(completionMarks) do
+        Isaac.SetCompletionMark(v.character, v.boss, v.value)
+      end
+    end
+    
+    return jsonDecoded, jsonDecoded and 'Imported ' .. #completionMarks .. ' completion marks' or data
+  end
+  
+  function mod:getJsonExport(inclBuiltInCharacters, inclModdedCharacters)
+    local s = '{'
+    
+    s = s .. '\n  "completionMarks": {'
+    local hasAtLeastOneCharacter = false
+    if inclBuiltInCharacters then
+      for _, character in ipairs({
+                                  PlayerType.PLAYER_ISAAC       ,
+                                  PlayerType.PLAYER_MAGDALENE   ,
+                                  PlayerType.PLAYER_CAIN        ,
+                                  PlayerType.PLAYER_JUDAS       ,
+                                  PlayerType.PLAYER_BLUEBABY    ,
+                                  PlayerType.PLAYER_EVE         ,
+                                  PlayerType.PLAYER_SAMSON      ,
+                                  PlayerType.PLAYER_AZAZEL      ,
+                                  PlayerType.PLAYER_LAZARUS     ,
+                                  PlayerType.PLAYER_EDEN        ,
+                                  PlayerType.PLAYER_THELOST     ,
+                                  PlayerType.PLAYER_LILITH      ,
+                                  PlayerType.PLAYER_KEEPER      ,
+                                  PlayerType.PLAYER_APOLLYON    ,
+                                  PlayerType.PLAYER_THEFORGOTTEN,
+                                  PlayerType.PLAYER_BETHANY     ,
+                                  PlayerType.PLAYER_JACOB       ,
+                                  PlayerType.PLAYER_ISAAC_B       ,
+                                  PlayerType.PLAYER_MAGDALENE_B   ,
+                                  PlayerType.PLAYER_CAIN_B        ,
+                                  PlayerType.PLAYER_JUDAS_B       ,
+                                  PlayerType.PLAYER_BLUEBABY_B    ,
+                                  PlayerType.PLAYER_EVE_B         ,
+                                  PlayerType.PLAYER_SAMSON_B      ,
+                                  PlayerType.PLAYER_AZAZEL_B      ,
+                                  PlayerType.PLAYER_LAZARUS_B     ,
+                                  PlayerType.PLAYER_EDEN_B        ,
+                                  PlayerType.PLAYER_THELOST_B     ,
+                                  PlayerType.PLAYER_LILITH_B      ,
+                                  PlayerType.PLAYER_KEEPER_B      ,
+                                  PlayerType.PLAYER_APOLLYON_B    ,
+                                  PlayerType.PLAYER_THEFORGOTTEN_B,
+                                  PlayerType.PLAYER_BETHANY_B     ,
+                                  PlayerType.PLAYER_JACOB_B       ,
+                                })
+      do
+        local keys = mod:getKeys(PlayerType, character)
+        if #keys > 0 then
+          local name = character .. '-' .. keys[1]
+          s = s .. mod:getJsonCharacterExport(character, name)
+          hasAtLeastOneCharacter = true
+        end
+      end
+    end
+    if inclModdedCharacters then
+      for _, character in ipairs(mod:getModdedCharacters()) do
+        local sourceId = mod:getXmlPlayerSourceId(character:GetPlayerType())
+        if sourceId then
+          local name = 'M-' .. sourceId .. '-' .. character:GetName()
+          if character:IsTainted() then
+            name = name .. '-Tainted-'
+          end
+          s = s .. mod:getJsonCharacterExport(character:GetPlayerType(), name)
+          hasAtLeastOneCharacter = true
+        end
+      end
+    end
+    if hasAtLeastOneCharacter then
+      s = string.sub(s, 1, -2) -- strip last comma
+    end
+    s = s .. '\n  }'
+    
+    s = s .. '\n}'
+    return s
+  end
+  
+  function mod:getJsonCharacterExport(character, name)
+    local s = ''
+    
+    s = s .. '\n    ' .. json.encode(name) .. ': {'
+    local hasAtLeastOneBoss = false
+    for _, boss in ipairs({
+                           CompletionType.MOMS_HEART ,
+                           CompletionType.ISAAC      ,
+                           CompletionType.SATAN      ,
+                           CompletionType.BOSS_RUSH  ,
+                           CompletionType.BLUE_BABY  ,
+                           CompletionType.LAMB       ,
+                           CompletionType.MEGA_SATAN ,
+                           CompletionType.ULTRA_GREED,
+                           CompletionType.HUSH       ,
+                           CompletionType.DELIRIUM   ,
+                           CompletionType.MOTHER     ,
+                           CompletionType.BEAST      ,
+                         })
+    do
+      local keys = mod:getKeys(CompletionType, boss)
+      if #keys > 0 then
+        s = s .. '\n      ' .. json.encode(boss .. '-' .. keys[1]) .. ': ' .. math.floor(Isaac.GetCompletionMark(character, boss)) .. ','
+        hasAtLeastOneBoss = true
+      end
+    end
+    if hasAtLeastOneBoss then
+      s = string.sub(s, 1, -2)
+    end
+    s = s .. '\n    },'
+    
+    return s
   end
   
   function mod:setupImGui()
@@ -56,6 +296,7 @@ if REPENTOGON then
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersTainted', 'Tainted')
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersRegularModded', 'Regular (Modded)')
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersTaintedModded', 'Tainted (Modded)')
+    ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersImportExport', 'Import/Export')
     
     for _, character in ipairs({
                                 { id = PlayerType.PLAYER_ISAAC       , tab = 'shenanigansTabCharactersRegular', achievements = { Achievement.ISAAC_HOLDS_THE_D6 }, achievementsText = { 'Start with #THE_D6_NAME?' } },
@@ -106,6 +347,64 @@ if REPENTOGON then
     for _, character in ipairs(mod:getModdedCharacters()) do
       mod:processCharacter({ id = character:GetPlayerType(), name = character:GetName(), tab = character:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded' })
     end
+    
+    local importText = ''
+    ImGui.AddElement('shenanigansTabCharactersImportExport', '', ImGuiElement.SeparatorText, 'Import')
+    ImGui.AddText('shenanigansTabCharactersImportExport', 'Paste JSON here:', false, '')
+    ImGui.AddInputTextMultiline('shenanigansTabCharactersImportExport', 'shenanigansTxtCharactersImport', '', function(txt)
+      importText = txt
+    end, importText, 12)
+    for i, v in ipairs({
+                        { text = 'Cut'        , func = function()
+                                                         if importText ~= '' then
+                                                           Isaac.SetClipboard(importText)
+                                                           ImGui.UpdateData('shenanigansTxtCharactersImport', ImGuiData.Value, '')
+                                                           importText = ''
+                                                         end
+                                                       end },
+                        { text = 'Copy'       , func = function()
+                                                         if importText ~= '' then
+                                                           Isaac.SetClipboard(importText)
+                                                         end
+                                                       end },
+                        { text = 'Paste'      , func = function()
+                                                         local clipboard = Isaac.GetClipboard()
+                                                         if clipboard then
+                                                           ImGui.UpdateData('shenanigansTxtCharactersImport', ImGuiData.Value, clipboard)
+                                                           importText = clipboard
+                                                         end
+                                                       end },
+                        { text = 'Import JSON', func = function()
+                                                         local jsonImported, msg = mod:processImportedJson(importText)
+                                                         ImGui.PushNotification(msg, jsonImported and ImGuiNotificationType.SUCCESS or ImGuiNotificationType.ERROR, 5000)
+                                                       end },
+                      })
+    do
+      ImGui.AddButton('shenanigansTabCharactersImportExport', 'shenanigansBtnCharactersImport' .. i, v.text, v.func, false)
+      if i < 4 then
+        ImGui.AddElement('shenanigansTabCharactersImportExport', '', ImGuiElement.SameLine, '')
+      end
+    end
+    
+    local exportBooleans = {
+      builtInCharacters = true,
+      moddedCharacters = true,
+    }
+    ImGui.AddElement('shenanigansTabCharactersImportExport', '', ImGuiElement.SeparatorText, 'Export')
+    for i, v in ipairs({
+                        { text = 'Export built-in characters?', exportBoolean = 'builtInCharacters' },
+                        { text = 'Export modded characters?'  , exportBoolean = 'moddedCharacters' },
+                      })
+    do
+      local chkCharactersExportId = 'shenanigansChkCharactersExport' .. i
+      ImGui.AddCheckbox('shenanigansTabCharactersImportExport', chkCharactersExportId, v.text, function(b)
+        exportBooleans[v.exportBoolean] = b
+      end, exportBooleans[v.exportBoolean])
+    end
+    ImGui.AddButton('shenanigansTabCharactersImportExport', 'shenanigansBtnCharactersExport', 'Copy JSON to clipboard', function()
+      Isaac.SetClipboard(mod:getJsonExport(exportBooleans.builtInCharacters, exportBooleans.moddedCharacters))
+      ImGui.PushNotification('Copied JSON to clipboard', ImGuiNotificationType.INFO, 5000)
+    end, false)
   end
   
   function mod:processCharacter(character)
@@ -120,15 +419,10 @@ if REPENTOGON then
       ImGui.UpdateData(chkUnlockedId, ImGuiData.Value, unlocked)
     end)
     ImGui.AddCallback(chkUnlockedId, ImGuiCallback.Edited, function(b)
-      local gameData = Isaac.GetPersistentGameData()
       local playerConfig = EntityConfig.GetPlayer(character.id)
       local achievement = playerConfig:GetAchievementID()
       if achievement > 0 then
-        if b then
-          gameData:TryUnlock(achievement) -- Isaac.ExecuteCommand('achievement ' .. achievement)
-        else
-          Isaac.ExecuteCommand('lockachievement ' .. achievement)
-        end
+        mod:unlockLock(achievement, b)
       end
     end)
     if character.achievements then
@@ -143,12 +437,7 @@ if REPENTOGON then
           ImGui.UpdateData(chkAchievementId, ImGuiData.Value, gameData:Unlocked(achievement))
         end)
         ImGui.AddCallback(chkAchievementId, ImGuiCallback.Edited, function(b)
-          if b then
-            local gameData = Isaac.GetPersistentGameData()
-            gameData:TryUnlock(achievement)
-          else
-            Isaac.ExecuteCommand('lockachievement ' .. achievement)
-          end
+          mod:unlockLock(achievement, b)
         end)
       end
     end
@@ -194,5 +483,7 @@ if REPENTOGON then
     end
   end
   
-  mod:AddCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, mod.onSaveSlotLoad)
+  -- launch options allow you to skip the menu
+  mod:AddCallback(ModCallbacks.MC_MAIN_MENU_RENDER, mod.onRender)
+  mod:AddCallback(ModCallbacks.MC_POST_RENDER, mod.onRender)
 end

@@ -5,6 +5,17 @@
     <id>3130836503</id>
     <description>This mod requires REPENTOGON. Press the tilde key to open the new debug console and menu. There's a new Shenanigans option that will let you lock/unlock characters and their completion marks.
 
+You can also import/export your completion marks. To import/export your unlocks/achievements and Eden Tokens, check out &quot;Stat and Achievement Shenanigans&quot;. Technically, that mod can also handle completion marks for built-in characters. It's just in a different format.
+
+The import JSON uses this format for modded characters: &quot;M-{modId}-{playerName}&quot; or &quot;M-{modId}-{playerName}-Tainted-&quot;. If you remove &quot;M-&quot;, this is the same format you'll find in Repentogon's completionmarksX.json files which are located here: C:\Users\username\Documents\My Games\Binding of Isaac Repentance\Repentogon
+
+JSON values:
+[list]
+    [*]0 = Off
+    [*]1 = Normal
+    [*]2 = Hard
+[/list]
+
 This is a companion mod to:
 [list]
     [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3131711250]Stat and Achievement Shenanigans[/url]
@@ -12,7 +23,7 @@ This is a companion mod to:
 [/list]
 
 Modded characters are now supported.</description>
-    <version>1.8</version>
+    <version>1.9</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Player Characters"/>
