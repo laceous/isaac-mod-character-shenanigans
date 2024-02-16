@@ -36,6 +36,15 @@ if REPENTOGON then
     return false
   end
   
+  function mod:getXmlModName(sourceid)
+    local entry = XMLData.GetModById(sourceid)
+    if entry and type(entry) == 'table' and entry.name and entry.name ~= '' then
+      return entry.name
+    end
+    
+    return nil
+  end
+  
   function mod:getXmlPlayerSourceId(id)
     id = tonumber(id)
     
@@ -387,7 +396,12 @@ if REPENTOGON then
     end
     
     for _, character in ipairs(mod:getModdedCharacters()) do
-      mod:processCharacter({ id = character:GetPlayerType(), name = character:GetName(), tab = character:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded' })
+      local modName = nil
+      local sourceid = mod:getXmlPlayerSourceId(character:GetPlayerType())
+      if sourceid then
+        modName = mod:getXmlModName(sourceid) or sourceid
+      end
+      mod:processCharacter({ id = character:GetPlayerType(), name = character:GetName(), tab = character:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded', mod = modName })
     end
     
     local importText = ''
@@ -453,6 +467,9 @@ if REPENTOGON then
     ImGui.AddElement(character.tab, '', ImGuiElement.SeparatorText, character.name)
     local chkUnlockedId = 'shenanigansChkCharacterUnlocked' .. character.id
     ImGui.AddCheckbox(character.tab, chkUnlockedId, 'Unlocked?', nil, false)
+    if character.mod then
+      ImGui.SetHelpmarker(chkUnlockedId, character.mod)
+    end
     ImGui.AddCallback(chkUnlockedId, ImGuiCallback.Render, function()
       local gameData = Isaac.GetPersistentGameData()
       local playerConfig = EntityConfig.GetPlayer(character.id)
