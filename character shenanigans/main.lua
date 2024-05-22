@@ -173,7 +173,7 @@ if REPENTOGON then
   function mod:unlockLock(achievement, unlock)
     if unlock then
       local gameData = Isaac.GetPersistentGameData()
-      gameData:TryUnlock(achievement) -- Isaac.ExecuteCommand('achievement ' .. achievement)
+      gameData:TryUnlock(achievement, false) -- Isaac.ExecuteCommand('achievement ' .. achievement)
     else
       Isaac.ExecuteCommand('lockachievement ' .. achievement)
     end
@@ -231,7 +231,7 @@ if REPENTOGON then
     local s = '{'
     
     s = s .. '\n  "completionMarks": {'
-    local hasAtLeastOneCharacter = false
+    local sb = {}
     if inclBuiltInCharacters then
       for _, character in ipairs({
                                   PlayerType.PLAYER_ISAAC       ,
@@ -273,8 +273,7 @@ if REPENTOGON then
         local keys = mod:getKeys(PlayerType, character)
         if #keys > 0 then
           local name = character .. '-' .. keys[1]
-          s = s .. mod:getJsonCharacterExport(character, name)
-          hasAtLeastOneCharacter = true
+          table.insert(sb, mod:getJsonCharacterExport(character, name))
         end
       end
     end
@@ -286,14 +285,11 @@ if REPENTOGON then
           if character:IsTainted() then
             name = name .. '-Tainted-'
           end
-          s = s .. mod:getJsonCharacterExport(character:GetPlayerType(), name)
-          hasAtLeastOneCharacter = true
+          table.insert(sb, mod:getJsonCharacterExport(character:GetPlayerType(), name))
         end
       end
     end
-    if hasAtLeastOneCharacter then
-      s = string.sub(s, 1, -2) -- strip last comma
-    end
+    s = s .. table.concat(sb, ',')
     s = s .. '\n  }'
     
     s = s .. '\n}'
@@ -304,7 +300,7 @@ if REPENTOGON then
     local s = ''
     
     s = s .. '\n    ' .. json.encode(name) .. ': {'
-    local hasAtLeastOneBoss = false
+    local sb = {}
     for _, boss in ipairs({
                            CompletionType.MOMS_HEART ,
                            CompletionType.ISAAC      ,
@@ -322,14 +318,11 @@ if REPENTOGON then
     do
       local keys = mod:getKeys(CompletionType, boss)
       if #keys > 0 then
-        s = s .. '\n      ' .. json.encode(boss .. '-' .. keys[1]) .. ': ' .. math.floor(Isaac.GetCompletionMark(character, boss)) .. ','
-        hasAtLeastOneBoss = true
+        table.insert(sb, '\n      ' .. json.encode(boss .. '-' .. keys[1]) .. ': ' .. math.floor(Isaac.GetCompletionMark(character, boss)))
       end
     end
-    if hasAtLeastOneBoss then
-      s = string.sub(s, 1, -2)
-    end
-    s = s .. '\n    },'
+    s = s .. table.concat(sb, ',')
+    s = s .. '\n    }'
     
     return s
   end
