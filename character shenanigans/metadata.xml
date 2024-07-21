@@ -22,8 +22,8 @@ This is a companion mod to:
     [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2932859748]Win Streak Shenanigans[/url]
 [/list]
 
-Modded characters are now supported.</description>
-    <version>1.12</version>
+Modded characters are now supported (as long as they're not hidden).</description>
+    <version>1.13</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Player Characters"/>
