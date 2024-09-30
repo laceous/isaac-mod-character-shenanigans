@@ -107,6 +107,7 @@ if REPENTOGON then
     return (s == nil or s == 'StringTable::InvalidCategory' or s == 'StringTable::InvalidKey') and key or s
   end
   
+  -- visible and in same order as character select carousel
   function mod:getModdedCharacters()
     local characters = {}
     
@@ -129,8 +130,34 @@ if REPENTOGON then
     return characters
   end
   
+  -- visible or hidden in ID order
+  function mod:getModdedCharactersForExport(inclVisible, inclHidden)
+    local characters = {}
+    
+    local i = PlayerType.NUM_PLAYER_TYPES
+    local playerConfig = EntityConfig.GetPlayer(i)
+    while playerConfig do
+      local isHidden = playerConfig:IsHidden()
+      if not isHidden and playerConfig:IsTainted() then
+        local regularConfig = playerConfig:GetTaintedCounterpart()
+        if regularConfig == nil or regularConfig:IsHidden() or regularConfig:IsTainted() then
+          isHidden = true
+        end
+      end
+      
+      if (inclVisible and not isHidden) or (inclHidden and isHidden) then
+        table.insert(characters, playerConfig)
+      end
+      
+      i = i + 1
+      playerConfig = EntityConfig.GetPlayer(i)
+    end
+    
+    return characters
+  end
+  
   function mod:getModdedCharacterId(sourceIdAndName)
-    for _, character in ipairs(mod:getModdedCharacters()) do
+    for _, character in ipairs(mod:getModdedCharactersForExport(true, true)) do
       local sourceId = mod:getXmlPlayerSourceId(character:GetPlayerType())
       if sourceId then
         local generatedSourceIdAndName = sourceId .. '-' .. character:GetName()
@@ -227,7 +254,7 @@ if REPENTOGON then
     return jsonDecoded, jsonDecoded and 'Imported ' .. #completionMarks .. ' completion marks' or data
   end
   
-  function mod:getJsonExport(inclBuiltInCharacters, inclModdedCharacters)
+  function mod:getJsonExport(inclBuiltInCharacters, inclVisibleModdedCharacters, inclHiddenModdedCharacters)
     local s = '{'
     
     s = s .. '\n  "completionMarks": {'
@@ -277,8 +304,8 @@ if REPENTOGON then
         end
       end
     end
-    if inclModdedCharacters then
-      for _, character in ipairs(mod:getModdedCharacters()) do
+    if inclVisibleModdedCharacters or inclHiddenModdedCharacters then
+      for _, character in ipairs(mod:getModdedCharactersForExport(inclVisibleModdedCharacters, inclHiddenModdedCharacters)) do
         local sourceId = mod:getXmlPlayerSourceId(character:GetPlayerType())
         if sourceId then
           local name = 'M-' .. sourceId .. '-' .. character:GetName()
@@ -437,12 +464,14 @@ if REPENTOGON then
     
     local exportBooleans = {
       builtInCharacters = true,
-      moddedCharacters = true,
+      visibleModdedCharacters = true,
+      hiddenModdedCharacters = true,
     }
     ImGui.AddElement('shenanigansTabCharactersImportExport', '', ImGuiElement.SeparatorText, 'Export')
     for i, v in ipairs({
-                        { text = 'Export built-in characters?', exportBoolean = 'builtInCharacters' },
-                        { text = 'Export modded characters?'  , exportBoolean = 'moddedCharacters' },
+                        { text = 'Export built-in characters?'      , exportBoolean = 'builtInCharacters' },
+                        { text = 'Export visible modded characters?', exportBoolean = 'visibleModdedCharacters' },
+                        { text = 'Export hidden modded characters?' , exportBoolean = 'hiddenModdedCharacters' },
                       })
     do
       local chkCharactersExportId = 'shenanigansChkCharactersExport' .. i
@@ -451,7 +480,7 @@ if REPENTOGON then
       end, exportBooleans[v.exportBoolean])
     end
     ImGui.AddButton('shenanigansTabCharactersImportExport', 'shenanigansBtnCharactersExport', 'Copy JSON to clipboard', function()
-      Isaac.SetClipboard(mod:getJsonExport(exportBooleans.builtInCharacters, exportBooleans.moddedCharacters))
+      Isaac.SetClipboard(mod:getJsonExport(exportBooleans.builtInCharacters, exportBooleans.visibleModdedCharacters, exportBooleans.hiddenModdedCharacters))
       ImGui.PushNotification('Copied JSON to clipboard', ImGuiNotificationType.INFO, 5000)
     end, false)
   end
