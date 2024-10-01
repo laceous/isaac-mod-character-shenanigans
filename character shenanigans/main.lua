@@ -227,7 +227,7 @@ if REPENTOGON then
               if type(l) == 'string' then
                 boss = tonumber(string.match(l, '^(%d+)'))
               end
-              if math.type(boss) == 'integer' and math.type(w) == 'integer' and mod:isBossType(boss) and w >= 0 then -- 0=off,1=normal,>=2=hard
+              if math.type(boss) == 'integer' and math.type(w) == 'integer' and mod:isBossType(boss) and w >= 0 and w <= 2 then -- 0=off,1=normal,2=hard
                 local key = character .. '-' .. boss
                 if not mod:hasKey(completionMarks, key) then
                   table.insert(completionMarks, { key = key, character = character, boss = boss, value = w })
