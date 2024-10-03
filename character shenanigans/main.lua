@@ -491,7 +491,7 @@ if REPENTOGON then
     ImGui.AddElement('shenanigansTabCharactersBosses', '', ImGuiElement.SeparatorText, 'Completion Marks')
     local txtHelpId = 'shenanigansTxtCharactersBossesHelp'
     ImGui.AddText('shenanigansTabCharactersBosses', '', false, txtHelpId)
-    ImGui.SetHelpmarker(txtHelpId, 'Start a new run with a chosen character + difficulty. Then come back here and record completion for the chosen boss to receive your completion mark + achievements.')
+    ImGui.SetHelpmarker(txtHelpId, 'Start a new run with selected character(s) + difficulty. Then come back here and choose one or more bosses to receive your completion marks + associated achievements.')
     for i, boss in ipairs(completionTypes) do
       ImGui.AddButton('shenanigansTabCharactersBosses', 'shenanigansBtnCharactersBosses' .. i, mod:padName(boss.name, longestName), function()
         if Isaac.IsInGame() and not game:AchievementUnlocksDisallowed() and Isaac.GetChallenge() == Challenge.CHALLENGE_NULL and game:GetVictoryLap() == 0 then
