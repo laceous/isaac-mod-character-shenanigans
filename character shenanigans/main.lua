@@ -1,5 +1,6 @@
 local mod = RegisterMod('Character Shenanigans', 1)
 local json = require('json')
+local game = Game()
 
 if REPENTOGON then
   function mod:onRender()
@@ -105,6 +106,42 @@ if REPENTOGON then
   function mod:localize(category, key)
     local s = Isaac.GetString(category, key)
     return (s == nil or s == 'StringTable::InvalidCategory' or s == 'StringTable::InvalidKey') and key or s
+  end
+  
+  function mod:padName(name, num)
+    local pad
+    if Options.Language == 'jp' or Options.Language == 'kr' or Options.Language == 'zh' then
+      pad = '\u{3000}' -- ideographic space
+      
+      local codes = {}
+      for _, c in utf8.codes(name) do
+        if c == 0x20 then -- space
+          table.insert(codes, 0x3000)
+        elseif c >= 0x21 and c <= 0x7E then -- ascii chars
+          table.insert(codes, c + 0xFEE0) -- full width chars
+        else
+          table.insert(codes, c)
+        end
+      end
+      name = utf8.char(table.unpack(codes))
+    else
+      pad = ' ' -- space
+    end
+    
+    local nameLength = utf8.len(name) -- string.len
+    if num > nameLength then
+      local diff = num - nameLength
+      if diff % 2 ~= 0 then
+        name = pad .. name -- extra space before name
+        diff = diff - 1
+      end
+      if diff > 0 then
+        local halfDiff = diff / 2
+        name = string.rep(pad, halfDiff) .. name .. string.rep(pad, halfDiff)
+      end
+    end
+    
+    return name
   end
   
   -- visible and in same order as character select carousel
@@ -367,6 +404,7 @@ if REPENTOGON then
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersTainted', 'Tainted')
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersRegularModded', 'Regular (Modded)')
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersTaintedModded', 'Tainted (Modded)')
+    ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersBosses', 'Bosses')
     ImGui.AddTab('shenanigansTabBarCharacters', 'shenanigansTabCharactersImportExport', 'Import/Export')
     
     for _, character in ipairs({
@@ -422,6 +460,102 @@ if REPENTOGON then
         modName = mod:getXmlModName(sourceid) or sourceid
       end
       mod:processCharacter({ id = character:GetPlayerType(), name = character:GetName(), tab = character:IsTainted() and 'shenanigansTabCharactersTaintedModded' or 'shenanigansTabCharactersRegularModded', mod = modName })
+    end
+    
+    local longestName = 0
+    local completionTypes = {
+      { id = CompletionType.MOMS_HEART , entity = EntityType.ENTITY_MOMS_HEART },
+      { id = CompletionType.ISAAC      , entity = EntityType.ENTITY_ISAAC },
+      { id = CompletionType.SATAN      , entity = EntityType.ENTITY_SATAN },
+      { id = CompletionType.BOSS_RUSH  , name = 'Boss Rush' },
+      { id = CompletionType.BLUE_BABY  , entity = EntityType.ENTITY_ISAAC, variant = 1 },
+      { id = CompletionType.LAMB       , entity = EntityType.ENTITY_THE_LAMB },
+      { id = CompletionType.MEGA_SATAN , entity = EntityType.ENTITY_MEGA_SATAN },
+      { id = CompletionType.ULTRA_GREED, entity = EntityType.ENTITY_ULTRA_GREED },
+      { id = CompletionType.HUSH       , entity = EntityType.ENTITY_HUSH },
+      { id = CompletionType.DELIRIUM   , entity = EntityType.ENTITY_DELIRIUM },
+      { id = CompletionType.MOTHER     , entity = EntityType.ENTITY_MOTHER },
+      { id = CompletionType.BEAST      , entity = EntityType.ENTITY_BEAST },
+    }
+    for _, boss in ipairs(completionTypes) do
+      if boss.entity then
+        local entityConfig = EntityConfig.GetEntity(boss.entity, boss.variant)
+        boss.name = mod:localize('Entities', entityConfig:GetName())
+      end
+      local nameLength = utf8.len(boss.name) -- string.len
+      if nameLength > longestName then
+        longestName = nameLength
+      end
+    end
+    
+    ImGui.AddElement('shenanigansTabCharactersBosses', '', ImGuiElement.SeparatorText, 'Completion Marks')
+    local txtHelpId = 'shenanigansTxtCharactersBossesHelp'
+    ImGui.AddText('shenanigansTabCharactersBosses', '', false, txtHelpId)
+    ImGui.SetHelpmarker(txtHelpId, 'Start a new run with a chosen character + difficulty. Then come back here and record completion for the chosen boss to receive your completion mark + achievements.')
+    for i, boss in ipairs(completionTypes) do
+      ImGui.AddButton('shenanigansTabCharactersBosses', 'shenanigansBtnCharactersBosses' .. i, mod:padName(boss.name, longestName), function()
+        if Isaac.IsInGame() and not game:AchievementUnlocksDisallowed() and Isaac.GetChallenge() == Challenge.CHALLENGE_NULL and game:GetVictoryLap() == 0 then
+          local gameData = Isaac.GetPersistentGameData()
+          if boss.id == CompletionType.MOMS_HEART then
+            gameData:IncreaseEventCounter(EventCounter.MOM_KILLS, 1)
+          elseif boss.id == CompletionType.ISAAC then
+            gameData:IncreaseEventCounter(EventCounter.ISAAC_KILLS, 1)
+          elseif boss.id == CompletionType.SATAN then
+            gameData:IncreaseEventCounter(EventCounter.SATAN_KILLS, 1)
+          elseif boss.id == CompletionType.BOSS_RUSH then
+            gameData:IncreaseEventCounter(EventCounter.BOSSRUSHS_CLEARED, 1)
+          elseif boss.id == CompletionType.BLUE_BABY then
+            gameData:IncreaseEventCounter(EventCounter.BLUE_BABY_KILLS, 1)
+          elseif boss.id == CompletionType.LAMB then
+            gameData:IncreaseEventCounter(EventCounter.LAMB_KILLS, 1)
+          elseif boss.id == CompletionType.MEGA_SATAN then
+            gameData:IncreaseEventCounter(EventCounter.MEGA_SATAN_KILLS, 1)
+          elseif boss.id == CompletionType.HUSH then
+            gameData:IncreaseEventCounter(EventCounter.HUSH_KILLS, 1)
+          elseif boss.id == CompletionType.DELIRIUM then
+            gameData:IncreaseEventCounter(EventCounter.DELIRIUM_KILLS, 1)
+          elseif boss.id == CompletionType.MOTHER then
+            gameData:IncreaseEventCounter(EventCounter.MOTHER_KILLS, 1)
+          elseif boss.id == CompletionType.BEAST then
+            gameData:IncreaseEventCounter(EventCounter.BEAST_KILLS, 1)
+          end
+          game:RecordPlayerCompletion(boss.id)
+          ImGui.PushNotification('Recorded completion mark: ' .. boss.name, ImGuiNotificationType.SUCCESS, 5000)
+        else
+          ImGui.PushNotification('Recording completion marks only works in a run (no seeded runs, challenges, victory laps, etc)', ImGuiNotificationType.ERROR, 5000)
+        end
+      end, false)
+      ImGui.AddElement('shenanigansTabCharactersBosses', '', ImGuiElement.SameLine, '')
+      local txtStatId = 'shenanigansTxtCharactersBosses' .. i
+      ImGui.AddText('shenanigansTabCharactersBosses', '', false, txtStatId)
+      ImGui.AddCallback(txtStatId, ImGuiCallback.Render, function()
+        local gameData = Isaac.GetPersistentGameData()
+        if boss.id == CompletionType.MOMS_HEART then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.MOM_KILLS))
+        elseif boss.id == CompletionType.ISAAC then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.ISAAC_KILLS))
+        elseif boss.id == CompletionType.SATAN then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.SATAN_KILLS))
+        elseif boss.id == CompletionType.BOSS_RUSH then
+          ImGui.UpdateText(txtStatId, 'Clears: ' .. gameData:GetEventCounter(EventCounter.BOSSRUSHS_CLEARED))
+        elseif boss.id == CompletionType.BLUE_BABY then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.BLUE_BABY_KILLS))
+        elseif boss.id == CompletionType.LAMB then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.LAMB_KILLS))
+        elseif boss.id == CompletionType.MEGA_SATAN then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.MEGA_SATAN_KILLS))
+        elseif boss.id == CompletionType.ULTRA_GREED then
+          ImGui.UpdateText(txtStatId, 'Coins: ' .. gameData:GetEventCounter(EventCounter.GREED_DONATION_MACHINE_COUNTER))
+        elseif boss.id == CompletionType.HUSH then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.HUSH_KILLS))
+        elseif boss.id == CompletionType.DELIRIUM then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.DELIRIUM_KILLS))
+        elseif boss.id == CompletionType.MOTHER then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.MOTHER_KILLS))
+        elseif boss.id == CompletionType.BEAST then
+          ImGui.UpdateText(txtStatId, 'Kills: ' .. gameData:GetEventCounter(EventCounter.BEAST_KILLS))
+        end
+      end)
     end
     
     local importText = ''

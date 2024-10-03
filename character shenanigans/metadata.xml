@@ -22,8 +22,10 @@ This is a companion mod to:
     [*][url=https://steamcommunity.com/sharedfiles/filedetails/?id=2932859748]Win Streak Shenanigans[/url]
 [/list]
 
-Modded characters are now supported. Hidden modded characters are accessible from the import/export tab.</description>
-    <version>1.15</version>
+Modded characters are now supported. Hidden modded characters are accessible from the import/export tab.
+
+Update: In an effort to tie achievements to completion marks, there's a new option to record your completion marks for any ending boss while in a run. Simply start a new run, choosing a character + difficulty, and use the options on the new Bosses tab. This will give you completion marks + any associated achievements (w/o having to go over to Stat and Achievement Shenanigans). Your mileage may vary with modded characters.</description>
+    <version>1.16</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Player Characters"/>
